@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 from PIL import Image
 import io
 
-# 1. Page Configuration
-st.set_page_config(page_title="Indoor Plant Expert", page_icon="🌿", layout="wide")
+# 1. Page Configuration (CHANGED TITLE HERE)
+st.set_page_config(page_title="Indoor Plant Bot", page_icon="🌿", layout="wide")
 
 # 2. Load API Key
 load_dotenv()
@@ -33,10 +33,10 @@ def load_knowledge_base():
 
 knowledge_base = load_knowledge_base()
 
-# 5. Define the System Instruction (Updated for Search Strategy)
+# 5. System Instruction (CHANGED NAME & PERSONA HERE)
 system_instruction = f"""
-You are a friendly "Indoor Plant Expert" (Odia botany guide).
-Your goal is to help users with plant care, local stock in Cuttack/Bhubaneswar, and prices.
+You are a friendly "Indoor Plant Bot".
+Your goal is to help users with indoor plant care, identifying plants from photos, and store stock.
 
 CONTEXT FROM STORE (Your "Memory"):
 -------------------
@@ -45,26 +45,24 @@ CONTEXT FROM STORE (Your "Memory"):
 
 STRICT GUIDELINES:
 1. **CHECK STORE DATA FIRST:** Always check the "CONTEXT FROM STORE" above. If the user asks about *your* prices or *your* stock, use that info.
-2. **USE GOOGLE SEARCH (The "Broad" View):** If the user asks about:
-   - Real-time info (e.g., "Current weather in Cuttack").
-   - Competitors (e.g., "Other nurseries in Bhubaneswar").
-   - General facts not in your text file (e.g., "Latest price of Urea in Odisha").
+2. **USE GOOGLE SEARCH:** If the user asks about:
+   - Real-time info (e.g., "Current weather").
+   - General plant facts not in your text file.
    ...then use your Google Search tool to find the answer.
 3. **IMAGE DIAGNOSIS:** If the user Uploads an Image:
    - Identify the plant name.
    - Diagnose diseases.
-   - Suggest care tips specifically for Odisha's humid/hot climate.
+   - Suggest care tips for indoor environments.
 4. Always mention if you found the info from the "Store Files" or "Online Search".
 """
 
-# 6. Initialize Chat Session with Google Search Tool
+# 6. Initialize Chat Session
 if "chat_session" not in st.session_state:
     st.session_state.chat_session = client.chats.create(
-        model="gemini-2.5-flash", 
+        model="gemini-2.0-flash", 
         config=types.GenerateContentConfig(
             system_instruction=system_instruction,
             temperature=0.7,
-            # This is the line that connects your bot to the internet
             tools=[types.Tool(google_search=types.GoogleSearch())]
         )
     )
@@ -92,15 +90,14 @@ with st.sidebar:
             mime_type=uploaded_file.type
         )
 
-# 8. Main Chat UI
-st.title("🌿 Indoor Plant Expert")
-st.caption("Ask about plants in Cuttack/Bhubaneswar or Upload a Photo!")
+# 8. Main Chat UI (CHANGED TITLE HERE)
+st.title("🌿 Indoor Plant Bot")
+st.caption("Ask about indoor plants or Upload a Photo!")
 
 # Display previous messages
 for message in st.session_state.chat_session._curated_history:
     role = "user" if message.role == "user" else "assistant"
     with st.chat_message(role):
-        # Only display text parts (skip displaying the image binary again)
         if message.parts[0].text:
             st.markdown(message.parts[0].text)
 
@@ -108,24 +105,19 @@ for message in st.session_state.chat_session._curated_history:
 user_input = st.chat_input("Ask a question about this plant...")
 
 if user_input:
-    # Display user message
     with st.chat_message("user"):
         st.markdown(user_input)
         if image_part:
             st.info("Attached an image for analysis.")
 
     try:
-        # Prepare content: If image exists, send [text, image], else just [text]
         if image_part:
             response = st.session_state.chat_session.send_message([user_input, image_part])
         else:
             response = st.session_state.chat_session.send_message(user_input)
         
-        # Show bot response
         with st.chat_message("assistant"):
             st.markdown(response.text)
             
     except Exception as e:
-
         st.error(f"An error occurred: {e}")
-
